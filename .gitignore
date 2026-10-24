@@ -13,7 +13,6 @@ config.log
 config.status
 config.guess
 config.sub
-Makefile
 Makefile.in
 autom4te.cache
 stamp-h1
@@ -22,6 +21,20 @@ ltmain.sh
 install-sh
 depcomp
 .deps
+
+# autotools Makefile (but not our custom wrapper)
+/libs/**/Makefile
+/gtk2_ardour/Makefile
+/share/Makefile
+/session_utils/Makefile
+
+# build logs and temporary files
+build*.log
+build*.txt
+config_output.txt
+configure*.log
+final_build.log
+full_build.log
 
 # OSX
 .DS_STORE

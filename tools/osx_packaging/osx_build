@@ -95,6 +95,7 @@ while [ $# -gt 0 ] ; do
 	--noharvid) shift ;;
 	--nostrip) STRIP= ; shift ;;
 	--clean) CLEANBUILD=1 ; shift ;;
+	--nodmg) NODMG=1 ; shift ;;
 	--sysdeps) PRINT_SYSDEPS=1; shift ;;
 	--no-nls) WITH_NLS= ; shift ;;
 	--nls) WITH_NLS=1 ; shift ;;
@@ -534,13 +535,16 @@ while [ true ] ; do
 			fi
 		fi
 
-		deps=`otool -L $file | awk '{print $1}' | egrep "($GTKSTACK_ROOT|/opt/|/local/|libs/$STDCPP)" | grep -v 'libjack\.' | grep -v "$(basename $file)"`
+		deps=`otool -L $file | awk '{print $1}' | egrep "($GTKSTACK_ROOT|/opt/|/local/|libs/|^@rpath/$STDCPP)" | grep -v 'libjack\.' | grep -v "$(basename $file)"`
 		# echo -n "."
 		for dep in $deps ; do
 			base=`basename $dep`
 			if ! test -f $Frameworks/$base; then
 				if echo $dep | grep -sq '^libs' ; then
 					cp $BUILD_ROOT/$dep $Frameworks
+				elif echo $dep | grep -sq '^@rpath/' ; then
+					test -f $GTKSTACK_ROOT/lib/$base || continue
+					cp $GTKSTACK_ROOT/lib/$base $Frameworks
 				else
 					cp $dep $Frameworks
 				fi
@@ -654,7 +658,7 @@ for libdir in $Frameworks $Surfaces $Panners $Backends $Frameworks/LV2/* $GTK_EN
 		# change all the dependencies
 
 		changes=""
-		for lib in `otool -L $dylib | egrep "($GTKSTACK_ROOT|/opt/|/local/|libs/$STDCPP)" | awk '{print $1}' | grep -v 'libjack\.'` ; do
+		for lib in `otool -L $dylib | awk '{print $1}' | egrep "($GTKSTACK_ROOT|/opt/|/local/|libs/|^@rpath/$STDCPP)" | grep -v 'libjack\.'` ; do
 			base=`basename $lib`
 			if test -f $Frameworks/$base ; then
 				changes="$changes -change $lib @executable_path/../lib/$base"
@@ -680,6 +684,11 @@ for libdir in $Frameworks $Surfaces $Panners $Backends $Frameworks/LV2/* $GTK_EN
 
 	done
 done
+
+if test -n "$NODMG"; then
+	echo "Created $APPDIR (skipping DMG)"
+	exit 0
+fi
 
 #
 # and now ... the DMG
